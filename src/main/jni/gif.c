@@ -76,8 +76,19 @@ static void cleanUp(GifInfo *info) {
 
 static inline time_t getRealTime(void) {
     struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) != -1)
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) != -1) 
         return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    
+    // ARChon/Chromium で CLOCK_MONOTONIC_RAW が使えなかった
+    // また ts.tv_sec が1970年からの経過時間のため1000倍すると
+    // 32bit環境で桁あふれしてしまうので最初に実行した時間からの経過時間にする
+    static time_t start_sec = 0;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != -1) {        
+        if (start_sec == 0) {
+            start_sec = ts.tv_sec;
+        }
+        return (ts.tv_sec - start_sec) * 1000 + ts.tv_nsec / 1000000;
+    }
     return -1; //should not happen since ts is in addressable space and CLOCK_MONOTONIC_RAW should be present
 }
 
